@@ -44,16 +44,6 @@ python Helden-Overhaul.py
 # Mit direktem Pfad
 python Helden-Overhaul.py "C:/Pfad/zu/deinem/Charakter.html"
 ```
-
 ---
-
-## 🛠 Technische Details
-
-Das Programm nutzt **Python** und **BeautifulSoup4**, um den DOM der HTML-Datei zu analysieren. Es injiziert:
-- **Custom CSS:** Ein modernes Stylesheet für das visuelle Upgrade.
-- **Vanilla JavaScript:** Ein mächtiges Skript für die Würfel-Logik, die Navigation und das Theme-Management. Es ist komplett autark und benötigt keine Internetverbindung (keine externen CDNs wie jQuery!).
-
-### Funktionsweise der Würfel
-Das Skript erkennt spezifische Klassen und Datenattribute (`data-probe`, `data-skill-value` etc.) innerhalb der HTML-Tabellen. Dadurch wird die Würfelfunktion "smart": Sie weiß genau, welcher Wert für die Probe relevant ist und wie die Differenz berechnet werden muss.
----
+*Hinweis:* Dieses Projekt wurde unter Zuhilfenahme von generativer KI (Grok & ChatGPT) entwickelt.
 *Viel Spaß beim Würfeln und Abenteuern!* ⚔️
