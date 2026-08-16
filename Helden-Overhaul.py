@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-modernisiere_charakterbogen.py
+Helden-Overhaul.py
 
 Modernisiert einen alten HTML-Charakterbogen, ohne die Charakterdaten
 zu verändern.
@@ -11,7 +11,7 @@ Interaktive Würfel:
 - Klick auf Talent/Zauber: 3× W20 mit TaW/ZfW-Verrechnung
 - Wiederholungsbutton, Light/Dark Mode
 
-Aufruf:  python modernisiere_charakterbogen.py MeinCharakter.html
+Aufruf:  python helden-overhaul.py MeinCharakter.html
 Ausgabe: MeinCharakter_modern.html
 """
 
