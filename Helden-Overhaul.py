@@ -10,13 +10,15 @@ Interaktive Würfel:
 - Klick auf Initiative: aktueller Wert + 1W6
 - Klick auf Talent/Zauber: 3× W20 mit TaW/ZfW-Verrechnung
 - Wiederholungsbutton, Light/Dark Mode
+- Würfel-log
 
-Aufruf:  python helden-overhaul.py MeinCharakter.html
+Aufruf:  python helde-overhaul.py MeinCharakter.html
 Ausgabe: MeinCharakter_modern.html
 """
 
 import argparse
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -34,384 +36,26 @@ except ImportError:
 # MODERNES CSS
 # ============================================================
 
-MODERN_CSS = r"""
-:root {
-  --bg:#eef1f5;
-  --surface:#fff;
-  --soft:#f7f8fa;
-  --text:#202733;
-  --muted:#667085;
-  --heading:#172033;
-  --accent:#7b2f2f;
-  --accent-dark:#542020;
-  --accent-light:#f4e7e7;
-  --border:#d9dee7;
-  --radius:14px;
-  --shadow:0 8px 24px rgba(31,41,55,.08);
-  --max:1500px;
-}
+CSS_DATEI = Path(__file__).resolve().parent / "heldenstyle.css"
 
-body.dark-mode {
-  --bg:#12141a;
-  --surface:#1e2128;
-  --soft:#2a2e37;
-  --text:#e2e8f0;
-  --muted:#94a3b8;
-  --heading:#f8fafc;
-  --accent:#e55353;
-  --accent-dark:#991b1b;
-  --accent-light:#331a1a;
-  --border:#334155;
-  --shadow:0 8px 24px rgba(0,0,0,.4);
-}
 
-* { box-sizing:border-box; }
-html { scroll-behavior:smooth; }
+def lade_modernes_css():
+    """Lädt das externe CSS aus heldenstyle.css neben dem Script."""
+    try:
+        with open(CSS_DATEI, "r", encoding="utf-8") as datei:
+            return datei.read()
+    except FileNotFoundError:
+        print(f"Fehler: CSS-Datei nicht gefunden: {CSS_DATEI}")
+        print("Bitte lege eine heldenstyle.css neben Helden-Overhaul.py ab.")
+        sys.exit(1)
+    except UnicodeDecodeError as fehler:
+        print("Fehler beim Lesen von heldenstyle.css als UTF-8:")
+        print(fehler)
+        sys.exit(1)
+    except OSError as fehler:
+        print(f"Fehler beim Lesen von heldenstyle.css: {fehler}")
+        sys.exit(1)
 
-body {
-  margin:0;
-  padding:0 20px 50px;
-  background:
-    radial-gradient(circle at top left, rgba(123,47,47,.07), transparent 32rem),
-    var(--bg);
-  color:var(--text);
-  font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  font-size:15px;
-  line-height:1.45;
-  transition:background .3s ease,color .3s ease;
-}
-
-body > table {
-  width:min(100%,var(--max));
-  margin:0 auto 18px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  border-collapse:separate;
-  border-spacing:0;
-  overflow:hidden;
-  transition:background .3s ease,border-color .3s ease,box-shadow .3s ease;
-}
-
-.heldenname {
-  width:min(100%,var(--max));
-  margin:28px auto 20px;
-  padding:28px 30px;
-  color:#fff;
-  background:linear-gradient(135deg,var(--accent-dark),var(--accent));
-  border-radius:18px;
-  box-shadow:0 12px 30px rgba(84,32,32,.22);
-  font-size:clamp(2rem,5vw,4rem);
-  font-weight:750;
-  line-height:1.05;
-  letter-spacing:-.035em;
-  text-align:left;
-}
-
-.titel {
-  display:block;
-  padding:13px 17px;
-  color:var(--heading);
-  background:linear-gradient(90deg,var(--accent-light),var(--surface));
-  border-bottom:1px solid var(--border);
-  font-size:1.08rem;
-  font-weight:750;
-  text-align:left;
-}
-
-body > table > tbody > tr > td { padding:16px; }
-
-body table table {
-  width:100%;
-  margin:0;
-  border-collapse:collapse;
-  border-spacing:0;
-  background:transparent;
-}
-
-body table table th {
-  padding:9px 10px;
-  color:var(--muted);
-  background:var(--soft);
-  border-bottom:1px solid var(--border);
-  font-size:.78rem;
-  font-weight:750;
-  text-transform:uppercase;
-}
-
-body table table td {
-  padding:8px 10px;
-  border-bottom:1px solid var(--border);
-  vertical-align:middle;
-}
-
-body > table > tbody > tr:nth-child(even) td { background:rgba(247,248,250,.5); }
-body.dark-mode > table > tbody > tr:nth-child(even) td { background:rgba(255,255,255,.03); }
-
-.name { color:var(--heading); font-weight:650; }
-.aktuell { font-weight:750; }
-.taw,.zfw { min-width:3em; color:var(--accent); font-weight:800; text-align:right; }
-.eigenschaften td.aktuell { color:var(--accent); font-size:1.08rem; font-weight:800; }
-.eigenschaften td.modifikator { color:var(--muted); }
-
-.talentgruppe td.name { color:var(--heading); font-weight:650; }
-.talentgruppe .probe { color:var(--muted); }
-.eig-mittel { color:var(--accent); font-weight:800; text-align:center; white-space:nowrap; }
-.zauber .name { color:var(--heading); font-weight:650; }
-.zauber .merkmale { color:var(--muted); text-align:left; }
-.nkwaffen td.name,.fkwaffen td.name,.schilde td.name { color:var(--heading); font-weight:650; }
-.beschreibung .eintrag { min-width:8em; }
-.persoenliches .name,.umfeld .name { white-space:nowrap; }
-
-img { max-width:100%; height:auto; border-radius:8px; }
-a { color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
-a:hover { color:var(--accent-dark); }
-
-.talente > tbody > tr > td { vertical-align:top !important; }
-.talente .links_innen,
-.talente .rechts_innen {
-  margin-top:0 !important;
-  padding-top:0 !important;
-  position:static !important;
-  top:auto !important;
-  bottom:auto !important;
-  float:none !important;
-  vertical-align:top !important;
-}
-.talente table.rechts_innen,
-.talente .rechts_innen table { margin-top:0 !important; }
-
-.wuerfelziel {
-  cursor:pointer;
-  transition:background .15s ease,box-shadow .15s ease,transform .1s ease;
-}
-.wuerfelziel:hover > td {
-  background:var(--accent-light) !important;
-  box-shadow:inset 0 0 0 9999px var(--accent-light);
-}
-.wuerfelziel:active { transform:scale(.995); }
-.wuerfelziel:focus-visible {
-  outline:3px solid rgba(123,47,47,.35);
-  outline-offset:-2px;
-}
-.eigenschaft-wuerfel .aktuell,
-.initiative-wuerfel .aktuell { cursor:pointer; }
-
-.wuerfel-overlay {
-  position:fixed;
-  inset:0;
-  z-index:2000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-  background:rgba(15,23,42,.58);
-  backdrop-filter:blur(5px);
-}
-.wuerfel-dialog {
-  width:min(720px,100%);
-  max-height:min(90vh,900px);
-  overflow:auto;
-  padding:24px;
-  color:var(--text);
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:18px;
-  box-shadow:0 24px 70px rgba(0,0,0,.3);
-}
-.wuerfel-dialog h2 { margin:0 0 5px; color:var(--heading); font-size:1.5rem; }
-.wuerfel-dialog-subtitle { margin:0 0 20px; color:var(--muted); }
-.wuerfel-proben {
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-  margin:18px 0;
-}
-.wuerfel-probe {
-  padding:15px 12px;
-  text-align:center;
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:12px;
-}
-.wuerfel-probe-eigenschaft { color:var(--muted); font-size:.82rem; font-weight:700; }
-.wuerfel-probe-wurf {
-  margin:4px 0;
-  color:var(--accent);
-  font-size:2rem;
-  font-weight:850;
-  line-height:1;
-}
-.wuerfel-probe-wert { font-weight:750; }
-.wuerfel-probe-differenz { margin-top:5px; font-weight:800; }
-.wuerfel-probe-differenz.plus { color:#18794e; }
-.wuerfel-probe-differenz.minus { color:#b42318; }
-body.dark-mode .wuerfel-probe-differenz.plus { color:#6ce0a6; }
-body.dark-mode .wuerfel-probe-differenz.minus { color:#ff8c8c; }
-
-.wuerfel-zusammenfassung {
-  margin:16px 0;
-  padding:14px 16px;
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:12px;
-}
-.wuerfel-zusammenfassung p { margin:5px 0; }
-.wuerfel-ergebnis {
-  margin:18px 0;
-  padding:15px;
-  border-radius:12px;
-  font-size:1.15rem;
-  font-weight:800;
-  text-align:center;
-}
-.wuerfel-ergebnis.erfolg { color:#166534; background:#dcfce7; border:1px solid #86efac; }
-.wuerfel-ergebnis.misserfolg { color:#991b1b; background:#fee2e2; border:1px solid #fca5a5; }
-body.dark-mode .wuerfel-ergebnis.erfolg { color:#bbf7d0; background:#143a27; border-color:#27633f; }
-body.dark-mode .wuerfel-ergebnis.misserfolg { color:#fecaca; background:#451b1b; border-color:#7f3030; }
-
-.wuerfel-buttons {
-  display:flex;
-  justify-content:flex-end;
-  gap:9px;
-  flex-wrap:wrap;
-  margin-top:18px;
-}
-.wuerfel-button {
-  padding:9px 14px;
-  color:var(--text);
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:9px;
-  cursor:pointer;
-  font:inherit;
-  font-weight:700;
-}
-.wuerfel-button.primary { color:#fff; background:var(--accent); border-color:var(--accent); }
-.wuerfel-button:hover { filter:brightness(.97); }
-
-.wuerfel-einzel {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:18px;
-  margin:20px 0;
-  padding:24px;
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:14px;
-}
-.wuerfel-einzel-wurf {
-  color:var(--accent);
-  font-size:3rem;
-  font-weight:900;
-  line-height:1;
-}
-.wuerfel-einzel-rechnung { font-size:1.1rem; }
-.wuerfel-einzel-rechnung strong { color:var(--accent); }
-
-@media (max-width:900px) {
-  body > table > tbody > tr > td:not(.beschreibung td) { display:block; width:100%; }
-  .beschreibung table { display:table !important; }
-  .beschreibung table tr { display:table-row !important; }
-  .beschreibung table td { display:table-cell !important; }
-}
-@media (max-width:600px) {
-  body { padding:0 7px 30px; font-size:14px; }
-  .heldenname { margin-top:8px; margin-bottom:10px; padding:20px; border-radius:13px; font-size:2rem; }
-  .modern-nav { top:5px; margin-bottom:10px; border-radius:9px; }
-  #theme-toggle { width:34px; height:32px; font-size:19px; }
-  body > table { margin-bottom:10px; border-radius:10px; }
-  .titel { padding:11px 13px; font-size:1rem; }
-  body > table > tbody > tr > td { padding:8px; }
-  body table table th,body table table td { padding:7px 8px; }
-  .wuerfel-proben { grid-template-columns:1fr; }
-  .wuerfel-dialog { padding:17px; }
-}
-@media print {
-  .modern-nav,.wuerfel-overlay { display:none !important; }
-  body { background:#fff; color:#000; }
-  body > table { box-shadow:none; }
-  .heldenname { color:#000; background:#fff; border:2px solid #000; box-shadow:none; }
-  .titel { color:#000; background:#eee; }
-}
-
-.modern-nav {
-  position:sticky;
-  top:12px;
-  z-index:1000;
-  width:min(100%,var(--max));
-  margin:0 auto 20px;
-  padding:8px;
-  display:flex;
-  gap:7px;
-  align-items:center;
-  overflow-x:auto;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  box-shadow:0 6px 20px rgba(31,41,55,.09);
-  backdrop-filter:blur(12px);
-  scrollbar-width:thin;
-}
-.modern-nav a {
-  flex:0 0 auto;
-  display:block;
-  padding:7px 11px;
-  color:var(--muted);
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:8px;
-  font-size:.82rem;
-  font-weight:650;
-  text-decoration:none;
-  white-space:nowrap;
-}
-.modern-nav a:hover { color:#fff; background:var(--accent); border-color:var(--accent); }
-
-#theme-toggle {
-  order:-1;
-  flex:0 0 auto;
-  width:36px;
-  height:34px;
-  padding:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--muted);
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:8px;
-  cursor:pointer;
-  font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  font-size:20px;
-  line-height:1;
-  text-decoration:none !important;
-}
-#theme-toggle:hover { color:#fff; background:var(--accent); border-color:var(--accent); }
-#theme-toggle:active { transform:scale(.96); }
-#theme-toggle:focus-visible { outline:3px solid rgba(123,47,47,.35); outline-offset:2px; }
-
-.nav-dice {
-  flex:0 0 auto;
-  margin-left:4px;
-  padding:7px 11px;
-  color:var(--muted);
-  background:var(--soft);
-  border:1px solid var(--border);
-  border-radius:8px;
-  cursor:pointer;
-  font:inherit;
-  font-size:.82rem;
-  font-weight:650;
-  white-space:nowrap;
-}
-.nav-dice:first-of-type { margin-left:auto; }
-.nav-dice:hover { color:#fff; background:var(--accent); border-color:var(--accent); }
-.nav-dice:active { transform:scale(.96); }
-.nav-dice:focus-visible { outline:3px solid rgba(123,47,47,.35); outline-offset:2px; }
-"""
 
 
 # ============================================================
@@ -423,6 +67,10 @@ THEME_AND_DICE_JAVASCRIPT = r"""
   "use strict";
 
   var STORAGE_KEY = "charakterbogen-dark-mode";
+
+  // Würfellog: absichtlich nur im JavaScript-Speicher.
+  // Dadurch bleibt er nur so lange erhalten, wie diese Seite geöffnet ist.
+  var ROLL_LOG = [];
 
   function rollDie(sides) {
     return Math.floor(Math.random() * sides) + 1;
@@ -483,6 +131,71 @@ THEME_AND_DICE_JAVASCRIPT = r"""
     return false;
   }
 
+  function getRollTime() {
+    var now = new Date();
+    return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0") + ":" + String(now.getSeconds()).padStart(2, "0");
+  }
+
+  // Jeder Wurf erzeugt genau EINEN Log-Eintrag.
+  // Format: [Uhrzeit][Talent/Eigenschaft/Zauber][Wurf1/Wurf2/Wurf3][✓|X]
+  function addRollLog(type, name, rolls, success) {
+    ROLL_LOG.push({
+      time: getRollTime(),
+      type: type,
+      name: name,
+      rolls: rolls.map(function (value) { return Number(value); }),
+      success: success
+    });
+  }
+
+  function formatRollLogEntry(entry) {
+    var status = entry.success === null ? "–" : (entry.success ? "✓" : "X");
+    var category = entry.type + (entry.name ? ": " + entry.name : "");
+    var rolls = entry.rolls.join("/");
+    var statusClass = entry.success === null ? "neutral" : (entry.success ? "erfolg" : "misserfolg");
+
+    // Absichtlich eine einzige, ungebrochene Textzeile.
+    return '<div class="wuerfel-log-eintrag" title="' + escapeHtml(category) + '">' +
+      '<span class="wuerfel-log-zeile">' +
+        '<span class="wuerfel-log-zeit">[' + escapeHtml(entry.time) + ']</span>' +
+        '<span class="wuerfel-log-art">[' + escapeHtml(category) + ']</span>' +
+        '<span class="wuerfel-log-wuerfe">[' + escapeHtml(rolls) + ']</span>' +
+        '<span class="wuerfel-log-status ' + statusClass + '">[' + status + ']</span>' +
+      '</span>' +
+    '</div>';
+  }
+
+  function showRollLog() {
+    var entries = ROLL_LOG.slice().reverse();
+    var content = entries.length
+      ? entries.map(formatRollLogEntry).join("")
+      : '<div class="wuerfel-log-leer">Noch keine Würfe in dieser Sitzung.</div>';
+
+    var html =
+      '<div class="wuerfel-log-titelzeile">' +
+        '<div><h2>Würfellog</h2><p class="wuerfel-dialog-subtitle">Nur diese Browser-Sitzung · [Uhrzeit][Art][Wurf1/Wurf2/Wurf3][✓|X]</p></div>' +
+        '<button type="button" class="wuerfel-log-leeren" data-action="clear-log">Log leeren</button>' +
+      '</div>' +
+      '<div class="wuerfel-log-liste">' + content + '</div>' +
+      '<div class="wuerfel-buttons"><button type="button" class="wuerfel-button" data-action="close">Schließen</button></div>';
+
+    showDialog(html);
+
+    var close = document.querySelector('[data-action="close"]');
+    var clear = document.querySelector('[data-action="clear-log"]');
+    if (close) close.addEventListener("click", closeDialog);
+    if (clear) clear.addEventListener("click", function () {
+      ROLL_LOG.length = 0;
+      showRollLog();
+    });
+  }
+
+  function initRollLogButton() {
+    var button = document.getElementById("roll-log-toggle");
+    if (!button) return;
+    button.addEventListener("click", showRollLog);
+  }
+
   function closeDialog() {
     var overlay = document.querySelector(".wuerfel-overlay");
     if (overlay) overlay.remove();
@@ -512,7 +225,7 @@ THEME_AND_DICE_JAVASCRIPT = r"""
     var roll = rollDie(20);
     var difference = value - roll;
     var success = difference >= 0;
-
+    addRollLog("Eigenschaft", name, [roll], success);
     var html =
       '<h2>' + escapeHtml(name) + '</h2>' +
       '<p class="wuerfel-dialog-subtitle">Eigenschaftsprobe mit 1W20</p>' +
@@ -637,6 +350,7 @@ THEME_AND_DICE_JAVASCRIPT = r"""
       remaining = Math.min(maxSkill, remaining);
 
       results.push({ abbreviation: abbreviation, value: value, roll: roll, difference: difference });
+
     }
 
     var bePenalty = 0;
@@ -655,6 +369,9 @@ THEME_AND_DICE_JAVASCRIPT = r"""
     }
 
     var success = remaining >= 0;
+    addRollLog(config.kind || "Talent/Zauber", config.name,
+      results.map(function (result) { return result.roll; }), success);
+
     var cards = results.map(function (result) {
       var cls = result.difference >= 0 ? "plus" : "minus";
       return '<div class="wuerfel-probe">' +
@@ -734,6 +451,7 @@ THEME_AND_DICE_JAVASCRIPT = r"""
       function rollFromRow() {
         showSkillRoll({
           name: row.getAttribute("data-name"),
+          kind: row.classList.contains("zauber-wuerfel") ? "Zauber" : "Talent",
           probe: row.getAttribute("data-probe"),
           skillValue: Number(row.getAttribute("data-skill-value")),
           skillLabel: row.getAttribute("data-skill-label"),
@@ -752,6 +470,8 @@ THEME_AND_DICE_JAVASCRIPT = r"""
 
   function showFreeRoll(sides) {
     var roll = rollDie(sides);
+    // Freie Würfe haben keine Probe. Das letzte Feld bleibt deshalb neutral.
+    addRollLog("Freier Wurf", "1W" + sides, [roll], null);
     var html =
       '<h2>1W' + sides + '</h2>' +
       '<p class="wuerfel-dialog-subtitle">Freier Wurf</p>' +
@@ -795,6 +515,7 @@ THEME_AND_DICE_JAVASCRIPT = r"""
     initTheme();
     initDiceTargets();
     initFreeDice();
+    initRollLogButton();
   }
 
   if (document.readyState === "loading") {
@@ -846,7 +567,11 @@ def entferne_altes_css(soup):
 
 
 def fuege_modernes_css_ein(soup):
-    """Fügt modernes CSS in den <head> ein."""
+    """Verknüpft die externe heldenstyle.css im <head>."""
+    # CSS-Datei beim Konvertieren prüfen/einlesen, damit ein fehlendes oder
+    # beschädigtes Benutzer-Stylesheet frühzeitig gemeldet wird.
+    lade_modernes_css()
+
     head = soup.head
     if head is None:
         head = soup.new_tag("head")
@@ -855,11 +580,23 @@ def fuege_modernes_css_ein(soup):
         else:
             soup.insert(0, head)
 
-    style = soup.new_tag("style")
-    style["type"] = "text/css"
-    style["id"] = "modern-character-sheet-style"
-    style.string = MODERN_CSS
-    head.append(style)
+    link = soup.new_tag("link")
+    link["rel"] = "stylesheet"
+    link["type"] = "text/css"
+    link["href"] = "heldenstyle.css"
+    link["title"] = "Benutzer Stil"
+    head.append(link)
+
+
+def kopiere_modernes_css(ausgabedatei):
+    """Legt heldenstyle.css neben der erzeugten HTML-Datei ab."""
+    ziel = ausgabedatei.parent / "heldenstyle.css"
+    try:
+        if CSS_DATEI.resolve() != ziel.resolve():
+            shutil.copy2(CSS_DATEI, ziel)
+    except OSError as fehler:
+        print(f"Fehler beim Kopieren von heldenstyle.css: {fehler}")
+        sys.exit(1)
 
 
 def erzeuge_id(text, nummer):
@@ -1102,11 +839,23 @@ def erstelle_navigation(soup, bereiche):
         btn.string = label
         nav.append(btn)
 
+    # Der Würfellog sitzt unabhängig vom Scrollen immer unten rechts.
+    log_button = soup.new_tag("button")
+    log_button["type"] = "button"
+    log_button["id"] = "roll-log-toggle"
+    log_button["class"] = "roll-log-toggle"
+    log_button["title"] = "Würfellog öffnen"
+    log_button["aria-label"] = "Würfellog öffnen"
+    log_button.string = "📜"
+
     header = soup.find("h1", class_="heldenname")
     if header:
         header.insert_after(nav)
     elif soup.body:
         soup.body.insert(0, nav)
+
+    if soup.body:
+        soup.body.append(log_button)
 
 
 def fuege_theme_javascript_ein(soup):
@@ -1365,6 +1114,7 @@ def main():
     aktualisiere_encoding(soup)
 
     ausgabedatei = erstelle_ausgabedatei(eingabedatei)
+    kopiere_modernes_css(ausgabedatei)
     speichere_html(soup, ausgabedatei)
 
     eigenschaften, initiative, talente, zauber = wuerfelstatistik
@@ -1377,6 +1127,7 @@ def main():
     print(f"Zauber würfelbar:        {zauber}")
     print()
     print(f"Ausgabe: {ausgabedatei}")
+    print(f"Stylesheet: {ausgabedatei.parent / 'heldenstyle.css'}")
     print()
     print("Das Original wurde nicht überschrieben.")
     print("Alle Charakterdaten bleiben erhalten.")
