@@ -633,6 +633,21 @@ def markiere_hauptbereiche(soup):
         element["class"] = klassen
         section_id = erzeuge_id(name, len(bereiche) + 1)
         element["id"] = section_id
+
+        # Colspan der Titelleiste an max. Spaltenzahl anpassen
+        # (volle Breite bei links/rechts-Layouts)
+        max_cols = 1
+        for row in element.find_all("tr"):
+            cols = 0
+            for cell in row.find_all(["td", "th"], recursive=False):
+                try:
+                    cols += int(cell.get("colspan") or 1)
+                except (TypeError, ValueError):
+                    cols += 1
+            if cols > max_cols:
+                max_cols = cols
+        titel["colspan"] = str(max_cols)
+
         bereiche.append((section_id, name))
 
     return bereiche
