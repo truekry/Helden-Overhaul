@@ -36,7 +36,10 @@ except ImportError:
 # MODERNES CSS
 # ============================================================
 
-CSS_DATEI = Path(__file__).resolve().parent / "heldenstyle.css"
+if getattr(sys, "frozen", False):
+    CSS_DATEI = Path(sys.executable).resolve().parent / "heldenstyle.css"
+else:
+    CSS_DATEI = Path(__file__).resolve().parent / "heldenstyle.css"
 
 
 def lade_modernes_css():
