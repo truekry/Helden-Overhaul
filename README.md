@@ -46,5 +46,9 @@ python Helden-Overhaul.py
 python Helden-Overhaul.py "C:/Pfad/zu/deinem/Charakter.html"
 ```
 ---
+
+![Vorschau](https://files.catbox.moe/dp2t6q.png)
+
+---
 *Hinweis:* Dieses Projekt wurde unter Zuhilfenahme von generativer KI (Grok & ChatGPT) entwickelt.
 *Viel Spaß beim Würfeln und Abenteuern!* ⚔️
