@@ -8,7 +8,7 @@
 - **Interaktive Würfel:** Klicke auf Eigenschaften (MU, KL, IN...), Talente oder Zauber, um direkt im Browser zu würfeln. Die Ergebnisse werden mathematisch korrekt gegen die Charakterwerte berechnet.
 - **Dark Mode:** Ein integrierter Umschalter für Tag- und Nachtmodus (speichert die Präferenz im Browser).
 - **Intelligente Proben:** Automatische Berechnung von Differenzen und Unterstützung für komplexe Proben (z.B. TaW/ZfW-Verbrauch).
-- **Logging:** Speichern der Würfelhistorie in einem Log (unten links im Dokument)
+- **Logging:** Speichern der Würfelhistorie in einem Log (unten rechts im Dokument)
 - **Elfen-Modus:** Erkennt automatisch, ob der Charakter ein Elf ist, und kann Zauberproben in der elfischen Notation (z.B. IN statt KL) darstellen.
 - **Non-Destructive:** Das Original wird nicht überschrieben. Es wird eine neue Datei mit dem Suffix `_modern.html` erstellt.
 - **Encoding-Fix:** Konvertiert alte Windows-1252/CP1252 Dateien automatisch in sauberes UTF-8.
