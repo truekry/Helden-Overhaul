@@ -18,7 +18,6 @@ Ausgabe: MeinCharakter_modern.html
 
 import argparse
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -58,6 +57,10 @@ def lade_modernes_css():
     except OSError as fehler:
         print(f"Fehler beim Lesen von heldenstyle.css: {fehler}")
         sys.exit(1)
+
+# Die CSS-Datei wird genau einmal beim Start/Einlesen des Scripts geladen.
+# Bei späteren Konvertierungen wird ausschließlich dieser Inhalt verwendet.
+MODERNES_CSS = lade_modernes_css()
 
 
 
@@ -570,11 +573,7 @@ def entferne_altes_css(soup):
 
 
 def fuege_modernes_css_ein(soup):
-    """Verknüpft die externe heldenstyle.css im <head>."""
-    # CSS-Datei beim Konvertieren prüfen/einlesen, damit ein fehlendes oder
-    # beschädigtes Benutzer-Stylesheet frühzeitig gemeldet wird.
-    lade_modernes_css()
-
+    """Bettet das beim Script-Start geladene CSS direkt in die HTML ein."""
     head = soup.head
     if head is None:
         head = soup.new_tag("head")
@@ -583,23 +582,11 @@ def fuege_modernes_css_ein(soup):
         else:
             soup.insert(0, head)
 
-    link = soup.new_tag("link")
-    link["rel"] = "stylesheet"
-    link["type"] = "text/css"
-    link["href"] = "heldenstyle.css"
-    link["title"] = "Benutzer Stil"
-    head.append(link)
-
-
-def kopiere_modernes_css(ausgabedatei):
-    """Legt heldenstyle.css neben der erzeugten HTML-Datei ab."""
-    ziel = ausgabedatei.parent / "heldenstyle.css"
-    try:
-        if CSS_DATEI.resolve() != ziel.resolve():
-            shutil.copy2(CSS_DATEI, ziel)
-    except OSError as fehler:
-        print(f"Fehler beim Kopieren von heldenstyle.css: {fehler}")
-        sys.exit(1)
+    style = soup.new_tag("style")
+    style["type"] = "text/css"
+    style["title"] = "Benutzer Stil"
+    style.string = MODERNES_CSS
+    head.append(style)
 
 
 def erzeuge_id(text, nummer):
@@ -1132,7 +1119,6 @@ def main():
     aktualisiere_encoding(soup)
 
     ausgabedatei = erstelle_ausgabedatei(eingabedatei)
-    kopiere_modernes_css(ausgabedatei)
     speichere_html(soup, ausgabedatei)
 
     eigenschaften, initiative, talente, zauber = wuerfelstatistik
@@ -1145,7 +1131,7 @@ def main():
     print(f"Zauber würfelbar:        {zauber}")
     print()
     print(f"Ausgabe: {ausgabedatei}")
-    print(f"Stylesheet: {ausgabedatei.parent / 'heldenstyle.css'}")
+    print("Stylesheet: in die HTML-Datei eingebettet")
     print()
     print("Das Original wurde nicht überschrieben.")
     print("Alle Charakterdaten bleiben erhalten.")
